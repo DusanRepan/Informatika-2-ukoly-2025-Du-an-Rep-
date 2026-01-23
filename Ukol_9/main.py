@@ -6,25 +6,10 @@ from storage import Storage
 # TODO: Implementovat dekorátor @log_action (zapsat do history.log)
 def log_action(func):
     def wrapper(*args, **kwargs):
-        # ... logika logování ...
+        with open("history.log", "a") as log_file:
+            log_file.write(f"Action: {func.__name__}\n")
         return func(*args, **kwargs)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        func_name = func.__name__
-
-        # Zavoláme původní funkci
-        result = func(*args, **kwargs)
-
-        # Zapíšeme do logu
-        try:
-            with open("history.log", "a", encoding="utf-8") as log_file:
-                log_file.write(
-                    f"[{timestamp}] {func_name} - {args[1:]} {kwargs}\n")
-        except Exception as e:
-            print(f"Chyba při logování: {e}")
-
-        return result
     return wrapper
-
 class InventoryManager:
     def __init__(self, storage: Storage):
         self.storage = storage
@@ -33,20 +18,14 @@ class InventoryManager:
     @log_action
     def add_product(self, name: str, price: float, quantity: int):
         # TODO: Vytvořit produkt, přidat do self.products, uložit
-        print(f"Produkt {name} přidán.")
-        try:
-            product = Product(name, price, quantity)
-            self.products.append(product)
-            self.storage.save_products(self.products)
-            print(f"Produkt {name} přidán.")
-        except ValueError as e:
-            print(f"Chyba: {e}")
+        new_product = Product(name = name, price = price, quantity = quantity)
+        self.products.append(new_product)
+        self.storage.save_products(self.products)
             
     def list_products(self):
         # TODO: Vypsat všechny produkty
-        if not self.products:
-            print("Sklad je prázdný.")
-            return
+        for product in self.products:
+            print(product)
 
         print("\n=== Seznam produktů ===")
         for i, product in enumerate(self.products, 1):
@@ -55,8 +34,8 @@ class InventoryManager:
 
     def search_products(self, query: str):
         # TODO: Vyhledat produkty obsahující query v názvu
-        query_lower = query.lower()
-        found = [p for p in self.products if query_lower in p.name.lower()]
+        total = sum(p.price * p.quantity for p in self.products)
+        print(f"Celková hodnota skladu: {total} Kč")
 
         if not found:
             print(
@@ -72,8 +51,7 @@ class InventoryManager:
         # TODO: Spočítat celkovou hodnotu
         total = sum(p.price * p.quantity for p in self.products)
         print(f"\nCelková hodnota skladu: {total:.2f} Kč")
-        return total
-
+        
 def main():
     parser = argparse.ArgumentParser(description="Systém správy skladu")
     subparsers = parser.add_subparsers(dest="command")
