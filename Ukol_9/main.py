@@ -8,6 +8,21 @@ def log_action(func):
     def wrapper(*args, **kwargs):
         # ... logika logování ...
         return func(*args, **kwargs)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        func_name = func.__name__
+
+        # Zavoláme původní funkci
+        result = func(*args, **kwargs)
+
+        # Zapíšeme do logu
+        try:
+            with open("history.log", "a", encoding="utf-8") as log_file:
+                log_file.write(
+                    f"[{timestamp}] {func_name} - {args[1:]} {kwargs}\n")
+        except Exception as e:
+            print(f"Chyba při logování: {e}")
+
+        return result
     return wrapper
 
 class InventoryManager:
@@ -19,18 +34,45 @@ class InventoryManager:
     def add_product(self, name: str, price: float, quantity: int):
         # TODO: Vytvořit produkt, přidat do self.products, uložit
         print(f"Produkt {name} přidán.")
-
+        try:
+            product = Product(name, price, quantity)
+            self.products.append(product)
+            self.storage.save_products(self.products)
+            print(f"Produkt {name} přidán.")
+        except ValueError as e:
+            print(f"Chyba: {e}")
+            
     def list_products(self):
         # TODO: Vypsat všechny produkty
-        pass
+        if not self.products:
+            print("Sklad je prázdný.")
+            return
+
+        print("\n=== Seznam produktů ===")
+        for i, product in enumerate(self.products, 1):
+            print(f"{i}. {product}")
+        print()
 
     def search_products(self, query: str):
         # TODO: Vyhledat produkty obsahující query v názvu
-        pass
+        query_lower = query.lower()
+        found = [p for p in self.products if query_lower in p.name.lower()]
+
+        if not found:
+            print(
+                f"Nebyly nalezeny žádné produkty odpovídající dotazu '{query}'")
+            return
+
+        print(f"\n=== Nalezené produkty pro '{query}' ===")
+        for i, product in enumerate(found, 1):
+            print(f"{i}. {product}")
+        print()
     
     def total_value(self):
         # TODO: Spočítat celkovou hodnotu
-        pass
+        total = sum(p.price * p.quantity for p in self.products)
+        print(f"\nCelková hodnota skladu: {total:.2f} Kč")
+        return total
 
 def main():
     parser = argparse.ArgumentParser(description="Systém správy skladu")
